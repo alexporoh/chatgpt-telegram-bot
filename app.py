@@ -60,7 +60,6 @@ def get_gpt_response(message):
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    return "ok"
     data = request.get_json()
     if "message" in data:
         chat_id = data["message"]["chat"]["id"]
