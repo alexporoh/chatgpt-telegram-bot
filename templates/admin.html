@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Админ-панель</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 30px auto; }
+        textarea, input[type="text"] { width: 100%; margin-bottom: 10px; padding: 8px; }
+        button { padding: 10px 20px; margin-right: 10px; }
+        .section { margin-bottom: 30px; }
+    </style>
+</head>
+<body>
+    <h1>Админ-панель</h1>
+
+    <div class="section">
+        <h2>Системный промт</h2>
+        <form action="/save_prompt" method="POST">
+            <textarea name="prompt" rows="4">{{ current_prompt }}</textarea>
+            <button type="submit">Сохранить промт</button>
+        </form>
+    </div>
+
+    <div class="section">
+        <h2>Рассылка</h2>
+        <form action="/broadcast" method="POST" enctype="multipart/form-data">
+            <textarea name="text" rows="4" placeholder="Текст рассылки"></textarea><br>
+            <input type="file" name="image"><br>
+            <button type="submit">Разослать</button>
+        </form>
+    </div>
+</body>
+</html>

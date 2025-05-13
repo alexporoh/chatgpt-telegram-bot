@@ -3,3 +3,4 @@ requests
 openai==0.28.1
 psycopg2-binary
 gunicorn
+werkzeug
