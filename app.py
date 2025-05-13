@@ -6,18 +6,15 @@ import psycopg2
 
 app = Flask(__name__)
 
-# Настройки из переменных окружения
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 openai.api_key = OPENAI_API_KEY
 
-# Подключение к базе данных
 def get_db_connection():
     return psycopg2.connect(DATABASE_URL, sslmode='require')
 
-# ✅ Создание таблицы при запуске
 def create_users_table():
     try:
         conn = get_db_connection()
@@ -37,7 +34,6 @@ def create_users_table():
     except Exception as e:
         print("❌ Ошибка при создании таблицы:", e)
 
-# Сохраняем пользователя в базу
 def save_user(chat_id, username):
     try:
         conn = get_db_connection()
@@ -49,7 +45,6 @@ def save_user(chat_id, username):
     except Exception as e:
         print("DB error:", e)
 
-# Ответ от OpenAI
 def get_gpt_response(message):
     try:
         completion = openai.ChatCompletion.create(
@@ -63,8 +58,7 @@ def get_gpt_response(message):
     except Exception as e:
         return "Ошибка генерации ответа: " + str(e)
 
-# Вебхук Telegram
-@app.route(f"/webhook", methods=["POST"])
+@app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.get_json()
     if "message" in data:
@@ -81,5 +75,4 @@ def webhook():
         })
     return "ok"
 
-# ⏳ Запуск создания таблицы при старте
 create_users_table()
