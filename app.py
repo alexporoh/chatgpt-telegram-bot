@@ -69,12 +69,21 @@ def webhook():
         text = data["message"].get("text", "")
 
         save_user(chat_id, username)
+
+        # автоответ при /start
+        if text.strip() == "/start":
+            requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", json={
+                "chat_id": chat_id,
+                "text": "Консультант от Dermapen Russia готов к вашим вопросам."
+            })
+
         reply = get_gpt_response(text)
 
         requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", json={
             "chat_id": chat_id,
             "text": reply
         })
+
     return "ok"
 
 create_users_table()
