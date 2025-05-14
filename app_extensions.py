@@ -70,24 +70,24 @@ def init_admin_routes(app):
     def broadcast():
         text = request.form.get("text", "").strip()
         image = request.files.get("image")
-        image_url = None
+        image_path = None
 
         if image:
             filename = secure_filename(image.filename)
             os.makedirs(STATIC_FOLDER, exist_ok=True)
-            filepath = os.path.join(STATIC_FOLDER, filename)
-            image.save(filepath)
-            image_url = f"https://chatgpt-telegram-bot-8jq0.onrender.com/static/{filename}"
-            print("Изображение сохранено:", image_url)
+            image_path = os.path.join(STATIC_FOLDER, filename)
+            image.save(image_path)
+            print("Изображение сохранено:", image_path)
 
         chat_ids = get_all_chat_ids()
         for chat_id in chat_ids:
             try:
-                if image_url:
-                    requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto", data={
-                        "chat_id": chat_id,
-                        "photo": image_url
-                    })
+                if image_path:
+                    with open(image_path, "rb") as photo:
+                        requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto",
+                            data={"chat_id": chat_id},
+                            files={"photo": photo}
+                        )
                 if text:
                     requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", json={
                         "chat_id": chat_id,
