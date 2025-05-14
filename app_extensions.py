@@ -1,4 +1,4 @@
-from flask import request, render_template, redirect
+from flask import request, render_template, redirect, abort
 import os
 import requests
 import psycopg2
@@ -7,6 +7,7 @@ from werkzeug.utils import secure_filename
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 STATIC_FOLDER = "static"
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "dermapen123")  # Пароль по умолчанию
 
 def get_db_connection():
     return psycopg2.connect(DATABASE_URL, sslmode='require')
@@ -54,20 +55,28 @@ def init_admin_routes(app):
         conn.close()
         return ids
 
+    def check_access():
+        password = request.args.get("password")
+        if password != ADMIN_PASSWORD:
+            abort(403)
+
     @app.route("/admin", methods=["GET"])
     def admin():
+        check_access()
         current_prompt = get_system_prompt()
         return render_template("admin.html", current_prompt=current_prompt)
 
     @app.route("/save_prompt", methods=["POST"])
     def save_prompt():
+        check_access()
         prompt = request.form.get("prompt", "").strip()
         if prompt:
             set_system_prompt(prompt)
-        return redirect("/admin")
+        return redirect(f"/admin?password={ADMIN_PASSWORD}")
 
     @app.route("/broadcast", methods=["POST"])
     def broadcast():
+        check_access()
         text = request.form.get("text", "").strip()
         image = request.files.get("image")
         image_path = None
@@ -96,4 +105,4 @@ def init_admin_routes(app):
             except Exception as e:
                 print(f"Ошибка при отправке {chat_id}:", e)
 
-        return redirect("/admin")
+        return redirect(f"/admin?password={ADMIN_PASSWORD}")
