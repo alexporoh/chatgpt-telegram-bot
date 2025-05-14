@@ -61,18 +61,6 @@ def init_admin_routes(app):
         conn.close()
         return ids
 
-    @app.route("/admin", methods=["GET"])
-    def admin():
-        current_prompt = get_system_prompt()
-        return render_template("admin.html", current_prompt=current_prompt)
-
-    @app.route("/save_prompt", methods=["POST"])
-    def save_prompt():
-        prompt = request.form.get("prompt", "").strip()
-        if prompt:
-            set_system_prompt(prompt)
-        return redirect("/admin")
-
     @app.route("/broadcast", methods=["POST"])
 def broadcast():
     text = request.form.get("text", "").strip()
@@ -81,25 +69,30 @@ def broadcast():
 
     if image:
         filename = secure_filename(image.filename)
-        os.makedirs(STATIC_FOLDER, exist_ok=True)
-        filepath = os.path.join(STATIC_FOLDER, filename)
+        os.makedirs("static", exist_ok=True)
+        filepath = os.path.join("static", filename)
         image.save(filepath)
 
-        # 👉 Вставляем ссылку на render-проект
         image_url = f"https://chatgpt-telegram-bot-8jq0.onrender.com/static/{filename}"
 
     chat_ids = get_all_chat_ids()
+    print("Рассылаем на", len(chat_ids), "пользователей")
+
     for chat_id in chat_ids:
-        if image_url:
-            requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto", json={
-                "chat_id": chat_id,
-                "caption": text,
-                "photo": image_url
-            })
-        else:
-            requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", json={
-                "chat_id": chat_id,
-                "text": text
-            })
+        try:
+            if image_url:
+                resp = requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto", json={
+                    "chat_id": chat_id,
+                    "caption": text,
+                    "photo": image_url
+                })
+            else:
+                resp = requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", json={
+                    "chat_id": chat_id,
+                    "text": text
+                })
+            print("→", chat_id, resp.status_code)
+        except Exception as e:
+            print("Ошибка отправки:", e)
 
     return redirect("/admin")
