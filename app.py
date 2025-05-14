@@ -50,7 +50,7 @@ def save_user(chat_id, username):
 def get_gpt_response(message):
     try:
         completion = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": get_system_prompt()},
                 {"role": "user", "content": message}
@@ -70,7 +70,6 @@ def webhook():
 
         save_user(chat_id, username)
 
-        # автоответ при /start
         if text.strip() == "/start":
             requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", json={
                 "chat_id": chat_id,
