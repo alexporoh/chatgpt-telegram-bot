@@ -8,10 +8,19 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 STATIC_FOLDER = "static"
 
-def init_admin_routes(app):
+def get_db_connection():
+    return psycopg2.connect(DATABASE_URL, sslmode='require')
 
-    def get_db_connection():
-        return psycopg2.connect(DATABASE_URL, sslmode='require')
+def get_system_prompt():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT value FROM settings WHERE key='system_prompt'")
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return row[0] if row else "Ты — дружелюбный помощник."
+
+def init_admin_routes(app):
 
     def create_admin_tables():
         conn = get_db_connection()
@@ -27,15 +36,6 @@ def init_admin_routes(app):
         conn.close()
 
     create_admin_tables()
-
-    def get_system_prompt():
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT value FROM settings WHERE key='system_prompt'")
-        row = cur.fetchone()
-        cur.close()
-        conn.close()
-        return row[0] if row else "Ты — дружелюбный помощник."
 
     def set_system_prompt(prompt):
         conn = get_db_connection()
