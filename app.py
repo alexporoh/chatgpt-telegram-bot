@@ -4,6 +4,8 @@ import requests
 from flask import Flask, request
 import psycopg2
 
+from app_extensions import init_admin_routes, get_system_prompt
+
 app = Flask(__name__)
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -46,8 +48,6 @@ def save_user(chat_id, username):
         print("DB error:", e)
 
 def get_gpt_response(message):
-    from app_extensions import get_system_prompt
-
     try:
         completion = openai.ChatCompletion.create(
             model="gpt-4",
@@ -78,6 +78,4 @@ def webhook():
     return "ok"
 
 create_users_table()
-
-from app_extensions import init_admin_routes
 init_admin_routes(app)
