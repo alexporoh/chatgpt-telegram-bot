@@ -78,6 +78,7 @@ def init_admin_routes(app):
             filepath = os.path.join(STATIC_FOLDER, filename)
             image.save(filepath)
             image_url = f"https://chatgpt-telegram-bot-8jq0.onrender.com/static/{filename}"
+            print("Изображение сохранено:", image_url)
 
         chat_ids = get_all_chat_ids()
         for chat_id in chat_ids:
@@ -85,10 +86,9 @@ def init_admin_routes(app):
                 if image_url:
                     requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto", data={
                         "chat_id": chat_id,
-                        "caption": text,
                         "photo": image_url
                     })
-                else:
+                if text:
                     requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", json={
                         "chat_id": chat_id,
                         "text": text
