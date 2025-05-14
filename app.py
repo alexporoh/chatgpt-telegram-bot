@@ -47,14 +47,16 @@ def save_user(chat_id, username):
 
 def get_gpt_response(message):
     try:
-        completion = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "Ты — дружелюбный помощник."},
-                {"role": "user", "content": message}
-            ]
-        )
-        return completion.choices[0].message.content.strip()
+        from app_extensions import get_system_prompt
+
+completion = openai.ChatCompletion.create(
+    model="gpt-4",
+    messages=[
+        {"role": "system", "content": get_system_prompt()},
+        {"role": "user", "content": message}
+    ]
+)
+urn completion.choices[0].message.content.strip()
     except Exception as e:
         return "Ошибка генерации ответа: " + str(e)
 

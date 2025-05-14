@@ -74,29 +74,32 @@ def init_admin_routes(app):
         return redirect("/admin")
 
     @app.route("/broadcast", methods=["POST"])
-    def broadcast():
-        text = request.form.get("text", "").strip()
-        image = request.files.get("image")
-        image_url = None
+def broadcast():
+    text = request.form.get("text", "").strip()
+    image = request.files.get("image")
+    image_url = None
 
-        if image:
-            filename = secure_filename(image.filename)
-            os.makedirs(STATIC_FOLDER, exist_ok=True)
-            filepath = os.path.join(STATIC_FOLDER, filename)
-            image.save(filepath)
-            image_url = f"{request.url_root}static/{filename}"
+    if image:
+        filename = secure_filename(image.filename)
+        os.makedirs(STATIC_FOLDER, exist_ok=True)
+        filepath = os.path.join(STATIC_FOLDER, filename)
+        image.save(filepath)
 
-        chat_ids = get_all_chat_ids()
-        for chat_id in chat_ids:
-            if image_url:
-                requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto", json={
-                    "chat_id": chat_id,
-                    "caption": text,
-                    "photo": image_url
-                })
-            else:
-                requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", json={
-                    "chat_id": chat_id,
-                    "text": text
-                })
-        return redirect("/admin")
+        # 👉 Вставляем ссылку на render-проект
+        image_url = f"https://chatgpt-telegram-bot-8jq0.onrender.com/static/{filename}"
+
+    chat_ids = get_all_chat_ids()
+    for chat_id in chat_ids:
+        if image_url:
+            requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto", json={
+                "chat_id": chat_id,
+                "caption": text,
+                "photo": image_url
+            })
+        else:
+            requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", json={
+                "chat_id": chat_id,
+                "text": text
+            })
+
+    return redirect("/admin")
