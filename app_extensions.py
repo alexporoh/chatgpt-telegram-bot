@@ -83,7 +83,7 @@ def init_admin_routes(app):
         for chat_id in chat_ids:
             try:
                 if image_url:
-                    requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto", json={
+                    requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto", data={
                         "chat_id": chat_id,
                         "caption": text,
                         "photo": image_url
