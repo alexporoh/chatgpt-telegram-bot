@@ -21,6 +21,15 @@ def get_system_prompt():
     conn.close()
     return row[0] if row else "Ты — дружелюбный помощник."
 
+def get_user_count():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM users")
+    count = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    return count
+
 def init_admin_routes(app):
 
     def create_admin_tables():
@@ -64,7 +73,8 @@ def init_admin_routes(app):
     def admin():
         check_access()
         current_prompt = get_system_prompt()
-        return render_template("admin.html", current_prompt=current_prompt)
+        user_count = get_user_count()
+        return render_template("admin.html", current_prompt=current_prompt, user_count=user_count)
 
     @app.route("/save_prompt", methods=["POST"])
     def save_prompt():
