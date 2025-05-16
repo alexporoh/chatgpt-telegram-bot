@@ -29,12 +29,21 @@ def create_users_table():
                 joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS dialogs (
+                id SERIAL PRIMARY KEY,
+                chat_id BIGINT NOT NULL,
+                role TEXT CHECK (role IN ('user', 'assistant')),
+                message TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
         conn.commit()
         cur.close()
         conn.close()
-        print("✅ Таблица users создана или уже существует.")
+        print("✅ Таблицы users и dialogs готовы.")
     except Exception as e:
-        print("❌ Ошибка при создании таблицы:", e)
+        print("❌ Ошибка при создании таблиц:", e)
 
 def save_user(chat_id, username):
     try:
@@ -47,16 +56,44 @@ def save_user(chat_id, username):
     except Exception as e:
         print("DB error:", e)
 
-def get_gpt_response(message):
+def save_dialog(chat_id, role, message):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO dialogs (chat_id, role, message) VALUES (%s, %s, %s)", (chat_id, role, message))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print("Ошибка сохранения диалога:", e)
+
+def load_last_dialog(chat_id, limit=5):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT role, message FROM dialogs
+        WHERE chat_id = %s
+        ORDER BY timestamp DESC
+        LIMIT %s
+    """, (chat_id, limit * 2))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return list(reversed(rows))
+
+def get_gpt_response(chat_id, user_message):
+    history = [{"role": "system", "content": get_system_prompt()}]
+    dialog = load_last_dialog(chat_id)
+    history.extend({"role": r, "content": m} for r, m in dialog)
+    history.append({"role": "user", "content": user_message})
+
     try:
         completion = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": get_system_prompt()},
-                {"role": "user", "content": message}
-            ]
+            messages=history
         )
-        return completion.choices[0].message.content.strip()
+        response = completion.choices[0].message.content.strip()
+        return response
     except Exception as e:
         return "Ошибка генерации ответа: " + str(e)
 
@@ -76,7 +113,10 @@ def webhook():
                 "text": "Консультант от Dermapen Russia готов к вашим вопросам."
             })
 
-        reply = get_gpt_response(text)
+        reply = get_gpt_response(chat_id, text)
+
+        save_dialog(chat_id, "user", text)
+        save_dialog(chat_id, "assistant", reply)
 
         requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", json={
             "chat_id": chat_id,
