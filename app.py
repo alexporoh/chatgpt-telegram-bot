@@ -89,7 +89,7 @@ def get_gpt_response(chat_id, user_message):
 
     try:
         completion = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-3.5-turbo-0125",
             messages=history
         )
         response = completion.choices[0].message.content.strip()
