@@ -1,4 +1,4 @@
-from flask import request, render_template, redirect, abort
+from flask import request, render_template, redirect, abort, make_response
 import os
 import requests
 import psycopg2
@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 STATIC_FOLDER = "static"
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "dermapen123")  # Пароль по умолчанию
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "dermapen123")
 
 def get_db_connection():
     return psycopg2.connect(DATABASE_URL, sslmode='require')
@@ -90,29 +90,49 @@ def init_admin_routes(app):
         text = request.form.get("text", "").strip()
         image = request.files.get("image")
         image_path = None
+        image_url = None
 
         if image:
             filename = secure_filename(image.filename)
             os.makedirs(STATIC_FOLDER, exist_ok=True)
             image_path = os.path.join(STATIC_FOLDER, filename)
             image.save(image_path)
-            print("Изображение сохранено:", image_path)
+            image_url = f"{request.url_root}static/{filename}"
+            print("Изображение сохранено:", image_url)
 
         chat_ids = get_all_chat_ids()
+        success_count = 0
+        error_count = 0
+
         for chat_id in chat_ids:
             try:
                 if image_path:
                     with open(image_path, "rb") as photo:
-                        requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto",
+                        response = requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto",
                             data={"chat_id": chat_id},
                             files={"photo": photo}
                         )
+                        if not response.ok:
+                            raise Exception(response.text)
+
                 if text:
-                    requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", json={
+                    response = requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", json={
                         "chat_id": chat_id,
                         "text": text
                     })
-            except Exception as e:
-                print(f"Ошибка при отправке {chat_id}:", e)
+                    if not response.ok:
+                        raise Exception(response.text)
 
-        return redirect(f"/admin?password={ADMIN_PASSWORD}")
+                success_count += 1
+
+            except Exception as e:
+                print(f"Ошибка при отправке пользователю {chat_id}:", e)
+                error_count += 1
+
+        html = f"""<html><body style='font-family:sans-serif; padding:20px;'>
+        <h2>Рассылка завершена ✅</h2>
+        <p>Успешно доставлено: <strong>{success_count}</strong></p>
+        <p>Не доставлено: <strong>{error_count}</strong></p>
+        <a href='/admin?password={ADMIN_PASSWORD}' style='display:inline-block;margin-top:20px;'>⬅ Вернуться в админку</a>
+        </body></html>"""
+        return make_response(html)
