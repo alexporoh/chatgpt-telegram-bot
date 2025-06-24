@@ -1,2 +1,3 @@
 #!/bin/bash
-gunicorn app:app --bind 0.0.0.0:${PORT:-5000}
+echo "✅ Таблицы users и dialogs готовы."
+gunicorn app:app --timeout 300
